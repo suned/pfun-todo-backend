@@ -1,10 +1,10 @@
 # pfun-todo-backend
-This is an example repository showcasing how to use [pfun](http://pfun.rtfd.io) with an [ASGI]()
-server by implementing the [Todo Backend](). We're using [FastAPI]() here, 
-but any ASGI server would do. [Postgres]() is used for persistence through `pfun.sql`.
+This is an example repository showcasing how to use [pfun](http://pfun.rtfd.io) with an [ASGI](https://asgi.readthedocs.io/en/latest/)
+server by implementing the [Todo Backend](https://todobackend.com/). We're using [FastAPI](https://fastapi.tiangolo.com/) here, 
+but any ASGI server would do. [Postgres](https://www.postgresql.org/) is used for persistence through `pfun.sql`.
 
 ## Running
-Requires [Docker]():
+Requires [Docker](https://www.docker.com/):
 ```console
 $ docker-compose up
 ```
