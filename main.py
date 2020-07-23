@@ -27,20 +27,27 @@ def as_todo(row: Dict[str, Any]) -> Try[TypeError, Todo]:
     return catch(TypeError)(lambda: Todo(**row))
 
 
-def handle_no_results(reason: sql.SQLError) -> Try[PostgresError, None]:
-    if isinstance(reason, sql.EmptyResultSet):
+def handle_no_results(
+    reason: Union[TypeError, PostgresError, sql.EmptyResultSetError]
+) -> Try[Union[PostgresError, TypeError], None]:
+    if isinstance(reason, sql.EmptyResultSetError):
         return success(None)
     return error(reason)
 
 
 class Model:
-    def get_todos(self) -> Effect[sql.HasSQL, PostgresError, Todos]:
+    def get_todos(self
+                  ) -> Effect[sql.HasSQL, 
+                              Union[TypeError, PostgresError], 
+                              Todos]:
         return sql.fetch('select * from todos').and_then(
             sql.as_type(Todo)
         )
 
     def get_todo(self, todo_id: int
-                 ) -> Effect[sql.HasSQL, Union[PostgresError, TypeError], Optional[Todo]]:
+                 ) -> Effect[sql.HasSQL, 
+                             Union[PostgresError, TypeError], 
+                             Optional[Todo]]:
         return sql.fetch_one(
             'select * from todos where id = $1', todo_id
         ).and_then(
@@ -111,9 +118,6 @@ app = FastAPI()
 async def get_todos() -> Todos:
     """
     Get all todos
-
-    Return:
-        List of all todos
     """
     effect = get_environment(HasModel).and_then(
         lambda env: env.model.get_todos()
