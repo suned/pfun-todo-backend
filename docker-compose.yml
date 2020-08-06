@@ -8,7 +8,7 @@ services:
             - "./create_tables.sql:/docker-entrypoint-initdb.d/create_tables.sql"
     app:
         build: .
-        image: pfun-fastapi-todo:0.0.2
+        image: pfun-fastapi-todo:0.10.0
         ports:
             - "8000:80"
         volumes:
