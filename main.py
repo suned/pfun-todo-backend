@@ -24,7 +24,7 @@ Todos = List[Todo]
 
 
 def as_todo(row: Dict[str, Any]) -> Try[TypeError, Todo]:
-    return catch(TypeError)(lambda: Todo(**row))
+    return catch(TypeError)(success(Todo(**row)))
 
 
 def handle_no_results(
