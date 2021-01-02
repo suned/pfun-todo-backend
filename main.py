@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any, Optional, Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from asyncpg import PostgresError
 from typing_extensions import Protocol
 
-from pfun import Try, Effect, List, get_environment, sql, Dict, catch, success, error
+from pfun import Try, Effect, List, depend, sql, Dict, catch, success, error
 
 
 class Todo(BaseModel):
@@ -24,11 +24,11 @@ Todos = List[Todo]
 
 
 def as_todo(row: Dict[str, Any]) -> Try[TypeError, Todo]:
-    return catch(TypeError)(lambda: Todo(**row))
+    return catch(TypeError)(success(Todo(**row)))
 
 
 def handle_no_results(
-    reason: Union[TypeError, PostgresError, sql.EmptyResultSetError]
+        reason: Union[TypeError, PostgresError, sql.EmptyResultSetError]
 ) -> Try[Union[PostgresError, TypeError], None]:
     if isinstance(reason, sql.EmptyResultSetError):
         return success(None)
@@ -37,16 +37,16 @@ def handle_no_results(
 
 class Model:
     def get_todos(self
-                  ) -> Effect[sql.HasSQL, 
-                              Union[TypeError, PostgresError], 
+                  ) -> Effect[sql.HasSQL,
+                              Union[TypeError, PostgresError],
                               Todos]:
         return sql.fetch('select * from todos').and_then(
             sql.as_type(Todo)
         )
 
     def get_todo(self, todo_id: int
-                 ) -> Effect[sql.HasSQL, 
-                             Union[PostgresError, TypeError], 
+                 ) -> Effect[sql.HasSQL,
+                             Union[PostgresError, TypeError],
                              Optional[Todo]]:
         return sql.fetch_one(
             'select * from todos where id = $1', todo_id
@@ -115,66 +115,70 @@ app = FastAPI()
 
 
 @app.get("/")
-async def get_todos() -> Todos:
+async def get_todos(has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> Todos:
     """
     Get all todos
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.get_todos()
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
 
 
 @app.post("/")
-async def add_todo(todo: Todo) -> Todo:
+async def add_todo(todo: Todo,
+                   has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> Todo:
     """
     Add a todo
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.add_todo(todo)
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
 
 
 @app.patch("/")
-async def patch_todo(todo: Todo) -> Todo:
+async def patch_todo(todo: Todo,
+                     has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> Todo:
     """
     Update a todo
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.patch_todo(todo)
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
 
 
 @app.delete("/")
-async def delete_todos() -> None:
+async def delete_todos(has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> None:
     """
     Delete all todos
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.delete_todos()
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
 
 
 @app.get("/{todo_id}")
-async def get_todo(todo_id: int) -> Union[None, Todo]:
+async def get_todo(todo_id: int,
+                   has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> Union[None, Todo]:
     """
     Get a todo
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.get_todo(todo_id)
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
 
 
 @app.delete("/{todo_id}")
-async def delete_todo(todo_id: int) -> None:
+async def delete_todo(todo_id: int,
+                      has_model_and_sql: HasModelAndSQL = Depends(HasModelAndSQL)) -> None:
     """
     Delete a todo
     """
-    effect = get_environment(HasModel).and_then(
+    effect = depend(HasModel).and_then(
         lambda env: env.model.delete_todo(todo_id)
     )
-    return await effect(HasModelAndSQL())
+    return await effect(has_model_and_sql)
